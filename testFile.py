@@ -1,7 +1,7 @@
+import time  # For adding explicit delays
 import datetime
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import openpyxl
@@ -37,7 +37,7 @@ def update_excel(sheet, row, longest, shortest):
 # Main function to process keywords
 def process_keywords(file_path):
     # Initialize WebDriver with automatic management
-    driver = webdriver.Chrome()  # Selenium will handle the driver automatically
+    driver = webdriver.Chrome()
     driver.get("https://www.google.com")
 
     # Accept cookies if the consent banner appears (adjust selector as per region)
@@ -55,24 +55,27 @@ def process_keywords(file_path):
         search_box.clear()
         search_box.send_keys(keyword)
 
-        # Wait explicitly for the suggestions to load
+        # Add a short delay to allow suggestions to load
+        time.sleep(1)  # Adjust the delay as needed based on network speed
+
+        # Wait explicitly for the suggestions to appear
         try:
             WebDriverWait(driver, 5).until(
                 EC.presence_of_all_elements_located((By.CSS_SELECTOR, ".G43f7e"))
             )
-            suggestions_elements = driver.find_elements(By.CSS_SELECTOR, ".G43f7e")
-            suggestions = [element.text for element in suggestions_elements if element.text.strip()]
+            suggestions_elements = driver.find_elements(By.CSS_SELECTOR, ".sbct .wM6W7d span")
+            suggestions = [s.text for s in suggestions_elements if s.text.strip()]
 
             if suggestions:
                 # Determine longest and shortest suggestions
                 longest, shortest = find_longest_and_shortest_options(suggestions)
-
-                # Update Excel sheet
                 update_excel(sheet, index, longest, shortest)
             else:
                 print(f"No suggestions found for keyword: {keyword}")
+                update_excel(sheet, index, "No Suggestions", "No Suggestions")
         except Exception as e:
             print(f"An error occurred while fetching suggestions for keyword '{keyword}': {e}")
+            update_excel(sheet, index, "Error", "Error")
 
         # Clear the search box for the next keyword
         search_box.clear()
